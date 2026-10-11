@@ -503,31 +503,36 @@ async function openNb(key){
 }
 
 // ---------- Edición compartida en tiempo real (Firebase Realtime Database) ----------
-const Collab={db:null,id:Math.random().toString(36).slice(2,9),ready:null,off:null};
+const Collab={db:null,id:Math.random().toString(36).slice(2,9),ready:null,off:null,err:'',online:false};
 const lastLocal={},pushT={};
 const setSync=t=>{syncMsg=t;const el=$('#sync');if(el)el.textContent=t};
 const loadScript=u=>new Promise((res,rej)=>{const e=document.createElement('script');e.src=u;e.onload=res;e.onerror=rej;document.head.appendChild(e)});
 function collabInit(){
   if(Collab.ready)return Collab.ready;
-  if(!window.FIREBASE_CONFIG||!FIREBASE_CONFIG.databaseURL)return Collab.ready=Promise.resolve(false);
+  if(!window.FIREBASE_CONFIG){Collab.err='⚪ Edición compartida desactivada: firebase-config.js está en null en esta versión de la web (¿no se subió el cambio a GitHub/Vercel?). Tus cambios solo se guardan en tu navegador.';return Collab.ready=Promise.resolve(false)}
+  if(!FIREBASE_CONFIG.databaseURL){Collab.err='🔴 Falta databaseURL dentro de firebase-config.js.';return Collab.ready=Promise.resolve(false)}
   return Collab.ready=(async()=>{
     try{
       const base='https://www.gstatic.com/firebasejs/9.23.0/';
       await loadScript(base+'firebase-app-compat.js');await loadScript(base+'firebase-database-compat.js');
-      firebase.initializeApp(FIREBASE_CONFIG);Collab.db=firebase.database();return true;
-    }catch(e){return false}
+      firebase.initializeApp(FIREBASE_CONFIG);Collab.db=firebase.database();
+      Collab.db.ref('.info/connected').on('value',s=>{Collab.online=!!s.val()});
+      return true;
+    }catch(e){console.error('Firebase:',e);Collab.err='🔴 No se pudo iniciar Firebase ('+(e&&e.message||'error')+'). ¿Sin Internet o bloqueador de anuncios? Mira la consola (F12).';return false}
   })();
 }
 function pushShared(el){
   const i=el.dataset.i,k=sharedKey;lastLocal[i]=Date.now();clearTimeout(pushT[i]);
   pushT[i]=setTimeout(()=>{if(!Collab.db||!k)return;
     Collab.db.ref('nb/'+k+'/cells/'+i).set({src:$('.src',el).value,t:firebase.database.ServerValue.TIMESTAMP,by:Collab.id})
-      .catch(()=>setSync('🔴 No se pudo guardar el cambio (revisa las reglas de Firebase)'))},250);
+      .catch(e=>{console.error(e);setSync('🔴 No se pudo guardar el cambio: '+(e&&e.message||'revisa las reglas de Firebase'))})},250);
 }
 async function collabAttach(key,cells){
   if(Collab.off){Collab.off();Collab.off=null}
   const ok=await collabInit();
-  if(!ok){setSync('⚪ Edición compartida desactivada (falta configurar Firebase): tus cambios solo se guardan en tu navegador');return}
+  if(!ok){setSync(Collab.err||'⚪ Edición compartida desactivada');return}
+  const denied=e=>{console.error('Firebase permiso:',e);setSync('🔴 Firebase rechaza la conexión: revisa las reglas (pestaña Reglas) y pulsa Publicar. Detalle: '+(e&&e.message||e))};
+  setTimeout(()=>{if(!Collab.online&&sharedKey===key)setSync('🔴 No se logra conectar con Firebase: revisa que databaseURL en firebase-config.js sea exactamente el de tu base de datos.')},8000);
   if(sharedKey!==key)return;
   const ref=Collab.db.ref('nb/'+key+'/cells'),orig=i=>{const c=nbs[0].nb.cells[i];return c?[].concat(c.source||[]).join(''):''};
   const setTa=(el,txt)=>{const ta=$('.src',el),focus=document.activeElement===ta,s=ta.selectionStart,e=ta.selectionEnd;
@@ -540,9 +545,9 @@ async function collabAttach(key,cells){
     setTa(el,v.src);
   };
   const removed=snap=>{const el=cells.find(c=>c.dataset.i===snap.key);if(el)setTa(el,orig(+snap.key))};
-  ref.on('child_added',apply);ref.on('child_changed',apply);ref.on('child_removed',removed);
+  ref.on('child_added',apply,denied);ref.on('child_changed',apply,denied);ref.on('child_removed',removed,denied);
   const pr=Collab.db.ref('presence/'+key),me=pr.child(Collab.id);
-  me.set(true);me.onDisconnect().remove();
-  const cnt=pr.on('value',s=>setSync('🟢 Edición compartida en tiempo real · '+s.numChildren()+' conectado(s)'));
+  me.set(true).catch(denied);me.onDisconnect().remove();
+  const cnt=pr.on('value',s=>setSync('🟢 Edición compartida en tiempo real · '+s.numChildren()+' conectado(s)'),denied);
   Collab.off=()=>{ref.off('child_added',apply);ref.off('child_changed',apply);ref.off('child_removed',removed);pr.off('value',cnt);me.remove()};
 }
