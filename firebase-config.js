@@ -11,12 +11,4 @@ const firebaseConfig = {
   appId: "1:955838336249:web:3df7e2ef14bf651801a628"
 };
 
-/* Ejemplo de cómo debe quedar:
-window.FIREBASE_CONFIG = {
-  apiKey: "AIza...",
-  authDomain: "tu-proyecto.firebaseapp.com",
-  databaseURL: "https://tu-proyecto-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "tu-proyecto",
-  appId: "1:123:web:abc"
-};
-*/
+window.FIREBASE_CONFIG = firebaseConfig;
