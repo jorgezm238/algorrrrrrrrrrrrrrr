@@ -260,12 +260,17 @@ const runCode=code=>{
 };
 const srcKey=n=>'nbsrc:'+n;
 const savedSrc=n=>{try{return JSON.parse(localStorage.getItem(srcKey(n))||'{}')}catch(e){return {}}};
+const resHtml=r=>{const txt=(r.out||'')+(r.val!=null?((r.out&&!r.out.endsWith('\n')?'\n':'')+r.val):'');
+  return (txt?`<pre class="out">${h(txt)}</pre>`:'')+(r.err?`<pre class="out err">${h(r.err)}</pre>`:'')};
+const savedOut=n=>{try{return JSON.parse(localStorage.getItem('nbout:'+n)||'{}')}catch(e){return {}}};
+const saveOut=(n,i,o)=>{const a=savedOut(n);a[i]=o;try{localStorage.setItem('nbout:'+n,JSON.stringify(a))}catch(e){}};
 const runCell=(c,i,name)=>{
   const src0=[].concat(c.source||[]).join('');
   if(c.cell_type==='markdown')return `<div class="card">${md(src0)}</div>`;
   if(c.cell_type!=='code')return '';
   const sv=savedSrc(name)[i],src=sv!==undefined?sv:src0;
-  return `<div class="nbcell" data-name="${h(name)}" data-i="${i}"><div class="row"><button class="run pri">▶ Ejecutar</button><span class="mut ec">[ ]</span></div><textarea class="src" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" wrap="off" rows="${Math.max(2,src.split('\n').length+1)}">${h(src)}</textarea><div class="outs">${nbOutHtml(c)}</div></div>`;
+  const o=savedOut(name)[i],mine=!!(o&&o.code===src);
+  return `<div class="nbcell" data-name="${h(name)}" data-i="${i}"><div class="row"><button class="run pri">▶ Ejecutar</button><span class="mut ec">${mine?'['+o.n+']':'[ ]'}</span></div><textarea class="src" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" wrap="off" rows="${Math.max(2,src.split('\n').length+1)}">${h(src)}</textarea><div class="outs">${mine?resHtml(o):nbOutHtml(c)}</div></div>`;
 };
 // ---------- Editor de código: sangría, pares, deshacer correcto ----------
 const insTxt=(ta,t)=>{ta.focus();if(!document.execCommand('insertText',false,t)){ta.setRangeText(t,ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}};
@@ -327,9 +332,10 @@ function wireRun(){
     const ta=$('.src',el),btn=$('.run',el),ec=$('.ec',el),outs=$('.outs',el);
     btn.disabled=true;ec.textContent='[*]';
     const r=await runCode(ta.value);
-    ec.textContent=r.err&&/interrump/i.test(r.err)?'[ ]':'['+(++execN)+']';
-    const txt=(r.out||'')+(r.val!=null?((r.out&&!r.out.endsWith('\n')?'\n':'')+r.val):'');
-    outs.innerHTML=(txt?`<pre class="out">${h(txt)}</pre>`:'')+(r.err?`<pre class="out err">${h(r.err)}</pre>`:'');
+    const interrupted=r.err&&/interrump/i.test(r.err);
+    ec.textContent=interrupted?'[ ]':'['+(++execN)+']';
+    outs.innerHTML=resHtml(r);
+    if(!interrupted)saveOut(el.dataset.name,el.dataset.i,{code:ta.value,out:r.out||'',val:r.val,err:r.err||'',n:execN});
     btn.disabled=false;return !r.err;
   };
   const saveSrc=el=>{const n=el.dataset.name,o=savedSrc(n);o[el.dataset.i]=$('.src',el).value;try{localStorage.setItem(srcKey(n),JSON.stringify(o))}catch(e){}};
@@ -345,16 +351,17 @@ function wireRun(){
   });
   if(document.fonts)document.fonts.ready.then(()=>cells.forEach(el=>fitTa($('.src',el))));
   if(!$('#runAll'))return;
+  $('#dlNb').onclick=exportNb;
   $('#runAll').onclick=async()=>{for(const el of cells){if(!(await runOne(el)))break}};
   $('#stopK').onclick=()=>{stopKernel();$$('.nbcell .run').forEach(b=>b.disabled=false)};
   $('#restK').onclick=()=>{stopKernel('Ejecución interrumpida.');execN=0;$$('.nbcell .ec').forEach(x=>x.textContent='[ ]');startKernel()};
-  $('#resetNb').onclick=()=>{if(confirm(sharedKey&&Collab.db?'Esto borra los cambios compartidos y vuelve al código original PARA TODOS los visitantes. ¿Continuar?':'¿Borrar tus cambios y volver al código original del notebook?')){nbs.forEach(x=>{try{localStorage.removeItem(srcKey(x.name))}catch(e){}});if(sharedKey&&Collab.db)Collab.db.ref('nb/'+sharedKey+'/cells').remove();renderNb()}};
+  $('#resetNb').onclick=()=>{if(confirm(sharedKey&&Collab.db?'Esto borra los cambios compartidos y vuelve al código original PARA TODOS los visitantes. ¿Continuar?':'¿Borrar tus cambios y volver al código original del notebook?')){nbs.forEach(x=>{try{localStorage.removeItem(srcKey(x.name));localStorage.removeItem('nbout:'+x.name)}catch(e){}});if(sharedKey&&Collab.db)Collab.db.ref('nb/'+sharedKey+'/cells').remove();renderNb()}};
 }
 let nbs=[];
 const renderNb=()=>{
   const ex=$('#examen').checked,tools=$('#herr').checked||ex;
   sharedKey=(!tools&&nbs[0]&&nbs[0].shared)||null;
-  const bar=nbs.length&&!tools?`<div class="card nbbar"><div class="row"><button id="runAll" class="pri">▶▶ Ejecutar todas</button><button id="stopK">⏹ Detener</button><button id="restK">↻ Reiniciar Python</button><button id="resetNb" class="sec">Restaurar originales</button><span id="kst" class="mut">${h(kStatus)}</span></div>${sharedKey?`<div id="sync" class="mut">${h(syncMsg)}</div>`:''}<p class="nota">El código se ejecuta de verdad en tu navegador (Python con Pyodide; necesita Internet para descargarlo la primera vez). Mayús+Intro ejecuta la celda y pasa a la siguiente. Tus cambios se guardan en este navegador. Si un bucle no termina, pulsa Detener.</p></div>`:'';
+  const bar=nbs.length&&!tools?`<div class="card nbbar"><div class="row"><button id="runAll" class="pri">▶▶ Ejecutar todas</button><button id="stopK">⏹ Detener</button><button id="restK">↻ Reiniciar Python</button><button id="dlNb">💾 Descargar .ipynb</button><button id="resetNb" class="sec">Restaurar originales</button><span id="kst" class="mut">${h(kStatus)}</span></div>${sharedKey?`<div id="sync" class="mut">${h(syncMsg)}</div>`:''}<p class="nota">El código se ejecuta de verdad en tu navegador (Python con Pyodide; necesita Internet para descargarlo la primera vez). Mayús+Intro ejecuta la celda y pasa a la siguiente. Tus cambios se guardan en este navegador. Si un bucle no termina, pulsa Detener.</p></div>`:'';
   $('#nbCont').innerHTML=bar+nbs.map((x,fid)=>x.err?`<div class="card ko">No se pudo leer ${h(x.name)} como notebook (.ipynb).</div>`:
     `<h3>📓 ${h(x.name)} (${x.nb.cells.length} celdas)</h3>`+x.nb.cells.map((c,i)=>tools?cell(c,i,fid,ex):runCell(c,i,x.name)).join('')).join('');
   if(tools)wireNb();else wireRun();
@@ -551,3 +558,41 @@ async function collabAttach(key,cells){
   const cnt=pr.on('value',s=>setSync('🟢 Edición compartida en tiempo real · '+s.numChildren()+' conectado(s)'),denied);
   Collab.off=()=>{ref.off('child_added',apply);ref.off('child_changed',apply);ref.off('child_removed',removed);pr.off('value',cnt);me.remove()};
 }
+
+// ---------- Guardar el notebook resuelto (.ipynb descargable) ----------
+function exportNb(){
+  const lines=t=>{const a=t.split('\n').map((l,k,z)=>k<z.length-1?l+'\n':l);if(a.length>1&&a[a.length-1]==='')a.pop();return a};
+  nbs.filter(x=>!x.err).forEach(x=>{
+    const nb=JSON.parse(JSON.stringify(x.nb)),outs=savedOut(x.name);
+    $$('.nbcell').filter(el=>el.dataset.name===x.name).forEach(el=>{
+      const i=+el.dataset.i,c=nb.cells[i],code=$('.src',el).value,orig=[].concat(c.source||[]).join(''),o=outs[i];
+      c.source=lines(code);
+      if(o&&o.code===code){
+        c.outputs=[];
+        if(o.out)c.outputs.push({output_type:'stream',name:'stdout',text:lines(o.out)});
+        if(o.val!=null)c.outputs.push({output_type:'execute_result',execution_count:o.n,data:{'text/plain':[o.val]},metadata:{}});
+        if(o.err){const L=o.err.split('\n'),last=L[L.length-1],j=last.indexOf(':');c.outputs.push({output_type:'error',ename:j>0?last.slice(0,j):'Error',evalue:j>0?last.slice(j+1).trim():last,traceback:[o.err]})}
+        c.execution_count=o.n;
+      }else if(code!==orig){c.outputs=[];c.execution_count=null}
+    });
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([JSON.stringify(nb,null,1)],{type:'application/json'}));
+    a.download=x.name.replace(/\.ipynb$/,'')+'-resuelto.ipynb';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  });
+}
+
+// ---------- Visor de notebooks de solo lectura ----------
+const roCell=c=>{
+  const src=[].concat(c.source||[]).join('');
+  if(c.cell_type==='markdown')return `<div class="card">${md(src)}</div>`;
+  if(c.cell_type==='code'&&src.trim())return `<div class="nbcode"><pre><code>${h(src)}</code></pre>${nbOutHtml(c)}</div>`;
+  return '';
+};
+$('#verFile').onchange=async e=>{
+  const c=$('#verCont');c.innerHTML='';
+  for(const f of e.target.files){
+    try{const nb=JSON.parse(await f.text());if(!Array.isArray(nb.cells))throw 0;
+      c.innerHTML+=`<h3>📓 ${h(f.name)} <span class="mut">(solo lectura · ${nb.cells.length} celdas)</span></h3>`+nb.cells.map(roCell).join('')}
+    catch(err){c.innerHTML+=`<div class="card ko">No se pudo leer ${h(f.name)} como notebook (.ipynb).</div>`}
+  }
+};
