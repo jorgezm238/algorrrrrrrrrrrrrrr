@@ -180,14 +180,19 @@ const KW=[ // patrón, explicación, error habitual, qué cambiar
 const BLANK=['range','print','append','len','return','while','def','for','if','else','elif','mid','import'];
 const md=t=>{
   t=t.replace(/\\[()\[\]]/g,'').replace(/\\(ldots|dots|cdots)/g,'…');
-  let o='',inC=false;
+  let o='',inC=false,buf=[],py=true;
   t.split('\n').forEach(l=>{
-    if(l.trim().startsWith('```')){o+=inC?'</code></pre>':'<pre><code>';inC=!inC;return}
-    if(inC){o+=h(l)+'\n';return}
+    if(l.trim().startsWith('```')){
+      if(inC){const c=buf.join('\n');o+='<pre><code>'+(py?hlPy(c):h(c))+'\n</code></pre>';buf=[]}
+      else py=/^```\s*(py|python|python3|ipython)?\s*$/i.test(l.trim());
+      inC=!inC;return}
+    if(inC){buf.push(l);return}
     l=h(l).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
     const m=l.match(/^(#{1,4})\s+(.*)/);
     o+=m?`<h${m[1].length+2}>${m[2]}</h${m[1].length+2}>`:/^\s*[-*]\s/.test(l)?'<div>• '+l.replace(/^\s*[-*]\s/,'')+'</div>':l.trim()?'<p>'+l+'</p>':'';
-  });return o;
+  });
+  if(inC){const c=buf.join('\n');o+='<pre><code>'+(py?hlPy(c):h(c))+'</code></pre>'}
+  return o;
 };
 const outText=c=>(c.outputs||[]).map(o=>o.output_type==='stream'?[].concat(o.text).join(''):o.output_type==='error'?o.ename+': '+o.evalue:o.data&&o.data['text/plain']?[].concat(o.data['text/plain']).join(''):'').join('').trim();
 const norm=s=>s.replace(/\s+/g,' ').trim().toLowerCase();
@@ -262,6 +267,23 @@ const srcKey=n=>'nbsrc:'+n;
 const savedSrc=n=>{try{return JSON.parse(localStorage.getItem(srcKey(n))||'{}')}catch(e){return {}}};
 const resHtml=r=>{const txt=(r.out||'')+(r.val!=null?((r.out&&!r.out.endsWith('\n')?'\n':'')+r.val):'');
   return (txt?`<pre class="out">${h(txt)}</pre>`:'')+(r.err?`<pre class="out err">${h(r.err)}</pre>`:'')};
+// ---------- Resaltado de sintaxis Python (sin librerías) ----------
+const PY_KW=new Set('False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield match case'.split(' '));
+const PY_BI=new Set('abs all any bin bool chr dict dir divmod enumerate filter float format hex input int isinstance len list map max min next oct open ord pow print range repr reversed round set sorted str sum tuple type zip super object Exception ValueError TypeError IndexError KeyError ZeroDivisionError RecursionError StopIteration'.split(' '));
+const PY_RE=/(#[^\n]*)|((?:[rRbBuUfF]{1,2})?(?:"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?))|(@[A-Za-z_][\w.]*)|(\b(?:0[xX][\da-fA-F_]+|0[bB][01_]+|\d[\d_]*\.?[\d_]*(?:[eE][+-]?\d+)?j?|\.\d+(?:[eE][+-]?\d+)?j?)\b)|([A-Za-z_]\w*)|([-+*/%=<>!&|^~]+|[()[\]{}:,.;])/g;
+const hlPy=src=>{
+  let o='',last=0,prev='';
+  src.replace(PY_RE,(m,com,str,dec,num,id,op,i)=>{
+    o+=h(src.slice(last,i));last=i+m.length;
+    let c='';
+    if(com)c='c';else if(str)c='s';else if(dec)c='d';else if(num)c='n';
+    else if(id){c=PY_KW.has(id)?(/^(True|False|None)$/.test(id)?'n':'k'):(prev==='def'||prev==='class')?'f':PY_BI.has(id)?'b':/^self$/.test(id)?'v':/^\s*\(/.test(src.slice(last))?'f':''}
+    else if(op)c=/^[()[\]{}:,.;]$/.test(op)?'p':'o';
+    if(id||op)prev=id||'';
+    o+=c?`<span class="t${c}">${h(m)}</span>`:h(m);return m});
+  return o+h(src.slice(last));
+};
+const hlSync=ta=>{const p=ta.previousElementSibling;if(p&&p.classList.contains('hl')){p.firstChild.innerHTML=hlPy(ta.value)+'\n';p.scrollLeft=ta.scrollLeft}};
 const savedOut=n=>{try{return JSON.parse(localStorage.getItem('nbout:'+n)||'{}')}catch(e){return {}}};
 const saveOut=(n,i,o)=>{const a=savedOut(n);a[i]=o;try{localStorage.setItem('nbout:'+n,JSON.stringify(a))}catch(e){}};
 const runCell=(c,i,name)=>{
@@ -270,12 +292,12 @@ const runCell=(c,i,name)=>{
   if(c.cell_type!=='code')return '';
   const sv=savedSrc(name)[i],src=sv!==undefined?sv:src0;
   const o=savedOut(name)[i],mine=!!(o&&o.code===src);
-  return `<div class="nbcell" data-name="${h(name)}" data-i="${i}"><div class="row"><button class="run pri">▶ Ejecutar</button><span class="mut ec">${mine?'['+o.n+']':'[ ]'}</span></div><textarea class="src" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" wrap="off" rows="${Math.max(2,src.split('\n').length+1)}">${h(src)}</textarea><div class="outs">${mine?resHtml(o):nbOutHtml(c)}</div></div>`;
+  return `<div class="nbcell" data-name="${h(name)}" data-i="${i}"><div class="row"><button class="run pri">▶ Ejecutar</button><span class="mut ec">${mine?'['+o.n+']':'[ ]'}</span></div><div class="ed"><pre class="hl" aria-hidden="true"><code>${hlPy(src)}\n</code></pre><textarea class="src" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" wrap="off" rows="${Math.max(2,src.split('\n').length+1)}">${h(src)}</textarea></div><div class="outs">${mine?resHtml(o):nbOutHtml(c)}</div></div>`;
 };
 // ---------- Editor de código: sangría, pares, deshacer correcto ----------
 const insTxt=(ta,t)=>{ta.focus();if(!document.execCommand('insertText',false,t)){ta.setRangeText(t,ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}};
 const delSel=ta=>{ta.focus();if(!document.execCommand('delete')){ta.setRangeText('',ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}};
-const fitTa=ta=>{const y=scrollY;ta.style.height='auto';ta.style.height=(ta.scrollHeight+2)+'px';scrollTo(0,y)};
+const fitTa=ta=>{hlSync(ta);const y=scrollY;ta.style.height='auto';ta.style.height=(ta.scrollHeight+2)+'px';scrollTo(0,y)};
 function lineOp(ta,fn){
   const v=ta.value,s=ta.selectionStart,e=ta.selectionEnd,had=s!==e;
   const ls=v.lastIndexOf('\n',s-1)+1;let le=v.indexOf('\n',e>s&&v[e-1]==='\n'?e-1:e);if(le<0)le=v.length;
@@ -343,6 +365,7 @@ function wireRun(){
     const ta=$('.src',el);
     $('.run',el).onclick=()=>runOne(el);
     fitTa(ta);
+    ta.onscroll=()=>{const p=ta.previousElementSibling;if(p)p.scrollLeft=ta.scrollLeft};
     ta.oninput=()=>{fitTa(ta);saveSrc(el);if(sharedKey)pushShared(el)};
     ta.onkeydown=e=>{
       if(e.key==='Enter'&&(e.shiftKey||e.ctrlKey||e.metaKey)){e.preventDefault();runOne(el).then(()=>{if(e.shiftKey&&cells[k+1])$('.src',cells[k+1]).focus()});return}
@@ -382,12 +405,12 @@ function cell(c,i,fid,ex){
   const lines=src.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).map((l,n)=>{const k=KW.find(k=>k[0].test(l));return `<div><code>${h(l.trim())}</code> → ${k?h(k[1]):'Asignación o expresión: guarda o calcula un valor.'}</div>`}).join('');
   const bl=BLANK.find(b=>new RegExp('\\b'+b+'\\b').test(src));
   const clozed=bl?src.replace(new RegExp('\\b'+bl+'\\b'),'_____'):'';
-  return `<div class="card"><b>Celda ${i+1} (código)</b><pre><code>${h(src)}</code></pre>
+  return `<div class="card"><b>Celda ${i+1} (código)</b><pre><code>${hlPy(src)}</code></pre>
     ${out&&!ex?`<pre class="out">${h(out)}</pre>`:''}
     <details ${ex?'':'open'}><summary>Explicación paso a paso</summary>${lines}
       ${hits.length?'<p><b>Errores habituales:</b></p>'+hits.map(k=>'<div>⚠ '+h(k[2])+'</div>').join('')+'<p><b>Prueba a cambiar:</b></p>'+hits.map(k=>'<div>✏️ '+h(k[3])+'</div>').join(''):''}</details>
     ${out?`<div class="card" data-out="${h(out)}" data-id="${id}"><b>¿Qué resultado produce?</b><textarea rows="2"></textarea><div class="row"><button class="hint sec">💡 Pista</button><button class="chk pri">Comprobar</button></div><div class="msg"></div></div>`:''}
-    ${clozed?`<div class="card" data-bl="${bl}"><b>Completa el código</b><pre><code>${h(clozed)}</code></pre><div class="row"><input type="text" placeholder="¿qué falta en _____?"><button class="chk2 pri">Comprobar</button><button class="hint2 sec">💡 Pista</button></div><div class="msg"></div></div>`:''}</div>`;
+    ${clozed?`<div class="card" data-bl="${bl}"><b>Completa el código</b><pre><code>${hlPy(clozed)}</code></pre><div class="row"><input type="text" placeholder="¿qué falta en _____?"><button class="chk2 pri">Comprobar</button><button class="hint2 sec">💡 Pista</button></div><div class="msg"></div></div>`:''}</div>`;
 }
 function wireNb(){
   $$('[data-out]').forEach(d=>{let n=0;const out=d.dataset.out,m=$('.msg',d),lines=out.split('\n');
@@ -585,7 +608,7 @@ function exportNb(){
 const roCell=c=>{
   const src=[].concat(c.source||[]).join('');
   if(c.cell_type==='markdown')return `<div class="card">${md(src)}</div>`;
-  if(c.cell_type==='code'&&src.trim())return `<div class="nbcode"><pre><code>${h(src)}</code></pre>${nbOutHtml(c)}</div>`;
+  if(c.cell_type==='code'&&src.trim())return `<div class="nbcode"><pre><code>${hlPy(src)}</code></pre>${nbOutHtml(c)}</div>`;
   return '';
 };
 $('#verFile').onchange=async e=>{
