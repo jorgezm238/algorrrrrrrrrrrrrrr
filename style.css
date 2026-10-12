@@ -141,3 +141,23 @@ pre,code,textarea.src{font-variant-ligatures:none;font-feature-settings:"liga" 0
 
 @keyframes fl{from{box-shadow:0 0 0 3px var(--ac)}to{box-shadow:var(--sh)}}
 .nbcell.flash{animation:fl 1.4s ease-out}
+
+/* ---- Resaltado de sintaxis Python (colores sobre fondo oscuro del código) ---- */
+.tk{color:#c792ea;font-weight:500}   /* palabras clave: def, for, if, return… */
+.tb{color:#82aaff}                   /* funciones integradas: print, len, range… */
+.tf{color:#ffcb6b}                   /* nombres de funciones y llamadas */
+.ts{color:#c3e88d}                   /* textos "…" */
+.tn{color:#f78c6c}                   /* números, True, False, None */
+.tc{color:#7f8aa3;font-style:italic} /* comentarios # */
+.td{color:#89ddff}                   /* decoradores @ */
+.tv{color:#ff9cac;font-style:italic} /* self */
+.to{color:#89ddff}                   /* operadores */
+.tp{color:#a6accd}                   /* paréntesis y signos */
+
+/* Editor con color: el texto coloreado va detrás y el textarea transparente encima */
+.ed{position:relative;background:var(--code);border-radius:8px}
+.ed pre.hl{position:absolute;inset:0;margin:0;padding:12px 14px;border:1px solid transparent;background:transparent;overflow:hidden;white-space:pre;tab-size:4;pointer-events:none;font:400 .9rem/1.6 var(--mono);color:#e4e9f5}
+.ed pre.hl code{font:inherit;display:block}
+.nbcell .ed textarea.src{position:relative;z-index:1;display:block;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:#ffd166;font:400 .9rem/1.6 var(--mono);padding:12px 14px;margin:0}
+.nbcell .ed textarea.src::selection{background:rgba(130,170,255,.35);-webkit-text-fill-color:transparent}
+.nbcell .ed textarea.src::placeholder{-webkit-text-fill-color:var(--mut)}
