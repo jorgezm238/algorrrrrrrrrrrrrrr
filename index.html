@@ -19,6 +19,7 @@
     <button data-v="nb" data-nb="p1">🐍 Práctica 1 · Python</button>
     <button data-v="nb" data-nb="p3">🐍 Práctica 3 · Divide y vencerás</button>
     <button data-v="nb" data-nb="up">📂 Cargar otro notebook</button>
+    <button data-v="ver">👁 Ver notebooks (solo lectura)</button>
     <button data-v="ia">🤖 IA (opcional)</button>
   </nav>
   <button id="tema">🌙 Modo oscuro</button>
@@ -60,6 +61,13 @@
     <input type="file" id="nbFile" accept=".ipynb" multiple>
     <div class="row"><label class="inl"><input type="checkbox" id="herr"> Ver explicaciones y ejercicios guiados (sin ejecutar)</label><label class="inl"><input type="checkbox" id="examen"> Modo examen práctico</label></div>
     <div id="nbCont"></div>
+  </section>
+
+  <section id="ver" class="vista" hidden>
+    <h2>Ver notebooks</h2>
+    <p>Sube los <code>.ipynb</code> que quieras para leerlos. Son de <b>solo lectura</b>: no se editan, no se ejecutan y no se comparten ni se guardan; al recargar la página desaparecen.</p>
+    <input type="file" id="verFile" accept=".ipynb" multiple>
+    <div id="verCont"></div>
   </section>
 
   <section id="ia" class="vista" hidden>
