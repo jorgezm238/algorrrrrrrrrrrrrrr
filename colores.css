@@ -1,0 +1,20 @@
+/* Colores del código (modo claro) */
+.hl .tk,pre code .tk{color:#d6336c}
+.hl .tf,pre code .tf{color:#1c5fd0}
+.hl .tb,pre code .tb{color:#0b7285}
+.hl .ts,pre code .ts{color:#2b8a3e}
+.hl .tn,pre code .tn{color:#d9480f}
+.hl .tc,pre code .tc{color:#868e96}
+.hl .td,pre code .td{color:#9c6b00}
+.hl .tv,pre code .tv{color:#c2410c}
+.hl .to,pre code .to{color:#7048e8}
+/* Modo oscuro */
+body.dark .hl .tk,body.dark pre code .tk{color:#ff7b9c}
+body.dark .hl .tf,body.dark pre code .tf{color:#82aaff}
+body.dark .hl .tb,body.dark pre code .tb{color:#7dcfff}
+body.dark .hl .ts,body.dark pre code .ts{color:#a5e075}
+body.dark .hl .tn,body.dark pre code .tn{color:#ff9e64}
+body.dark .hl .tc,body.dark pre code .tc{color:#7e8ca3}
+body.dark .hl .td,body.dark pre code .td{color:#e0af68}
+body.dark .hl .tv,body.dark pre code .tv{color:#ffb86c}
+body.dark .hl .to,body.dark pre code .to{color:#c0a5ff}
