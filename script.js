@@ -514,7 +514,10 @@ function renderPdfText(d){
 // ---------- Notebooks incluidos en la web (sin subirlos a mano) ----------
 const BUILTIN={
   p1:{file:'notebooks/practica1-introduccion-python.ipynb',title:'🐍 Práctica 1 · Introducción a Python'},
-  p3:{file:'notebooks/practica3-divide-y-venceras.ipynb',title:'🐍 Práctica 3 · Divide y vencerás'}};
+  p3:{file:'notebooks/practica3-divide-y-venceras.ipynb',title:'🐍 Práctica 3 · Divide y vencerás'},
+  p4:{file:'notebooks/algoritmia_Practica_4_Ordenacion_Divide_y_Venceras.ipynb',title:'🐍 Práctica 4 · Ordenación D&V'},
+  p5:{file:'notebooks/algoritmia_05_Voraces_Laboratorio.ipynb',title:'🐍 Práctica 5 · Voraces'},
+  p6:{file:'notebooks/algoritmia_06_Grafos_y_Dijkstra.ipynb',title:'🐍 Práctica 6 · Grafos y Dijkstra'}
 const nbCache={};let uploaded=[],sharedKey=null,curNb=null,syncMsg='⏳ Conectando edición compartida…';
 async function openNb(key){
   const up=key==='up';
