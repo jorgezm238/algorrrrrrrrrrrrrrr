@@ -21,8 +21,8 @@ function inicio(){
   const n=S.tests.length,avg=n?(S.tests.reduce((a,t)=>a+t.nota,0)/n).toFixed(1):'–';
   const card=(v,l)=>`<div class="card"><div class="big">${v}</div>${l}</div>`;
   $('#stats').innerHTML=card(n,'tests realizados')+card(avg,'nota media /10')+card(S.fails.test.length+S.fails.vf.length,'preguntas falladas pendientes')+
-    card(S.known.length+' / '+TOPICS.reduce((a,t)=>a+t.defs.length,0),'flashcards dominadas')+card(S.nbOk+' / '+S.nbTot,'ejercicios práctica acertados')+
-    `<div class="card"><b>Progreso de flashcards</b><div class="bar"><i style="width:${S.known.length*100/TOPICS.reduce((a,t)=>a+t.defs.length,0)}%"></i></div></div>`;
+  card(S.known.length+' / '+TOPICS.reduce((a,t)=>a+t.defs.length,0),'flashcards dominadas')+card(S.nbOk+' / '+S.nbTot,'ejercicios práctica acertados')+
+  `<div class="card"><b>Progreso de flashcards</b><div class="bar"><i style="width:${S.known.length*100/TOPICS.reduce((a,t)=>a+t.defs.length,0)}%"></i></div></div>`;
 }
 
 // ---------- Teoría ----------
@@ -34,8 +34,8 @@ function teoria(m){
     if(!ds.length)c.innerHTML='<div class="card">Carga tus PDF con el botón de arriba para verlos aquí.</div>';
     else{if(pdfSel>=ds.length)pdfSel=0;const d=ds[pdfSel];
       c.innerHTML=`<div class="row">Documento: <select id="pdfSel">${ds.map((x,k)=>`<option value="${k}" ${k===pdfSel?'selected':''}>${h(x.name)}</option>`).join('')}</select><a href="${d.url}" target="_blank">Abrir en pestaña nueva</a></div>
-      <iframe src="${d.url}" title="${h(d.name)}" style="width:100%;height:70vh;border:1px solid var(--bd);border-radius:8px;background:#fff"></iframe>
-      ${d.ok?`<h3>Contenido de «${h(d.name)}» (${d.pages.length} páginas)</h3><p class="nota">Reconstruido a partir del PDF: títulos, listas y código se detectan por tamaño y tipo de letra, y pueden fallar (sobre todo en tablas). El visor de arriba es el original.</p>`+renderPdfText(d):'<p class="fb ko">No se pudo extraer texto de este PDF (¿escaneado?), pero puedes verlo arriba.</p>'}`;
+<iframe src="${d.url}" title="${h(d.name)}" style="width:100%;height:70vh;border:1px solid var(--bd);border-radius:8px;background:#fff"></iframe>
+${d.ok?`<h3>Contenido de «${h(d.name)}» (${d.pages.length} páginas)</h3><p class="nota">Reconstruido a partir del PDF: títulos, listas y código se detectan por tamaño y tipo de letra, y pueden fallar (sobre todo en tablas). El visor de arriba es el original.</p>`+renderPdfText(d):'<p class="fb ko">No se pudo extraer texto de este PDF (¿escaneado?), pero puedes verlo arriba.</p>'}`;
       $('#pdfSel').onchange=e=>{pdfSel=+e.target.value;teoria('pdf')};}}
   if(m==='res')c.innerHTML=TOPICS.map(t=>`<div class="card"><h3>${h(t.t)}</h3><div class="mut">📄 ${h(t.doc)} · pág. ${t.pag}</div><p>${h(t.sum)}</p><p><b>Ejemplo:</b> ${h(t.ex)}</p></div>`).join('');
   if(m==='def')c.innerHTML=TOPICS.map(t=>`<div class="card"><h3>${h(t.t)} <span class="mut">(${h(t.doc)}, pág. ${t.pag})</span></h3>${t.defs.map(d=>`<p><b>${h(d[0])}:</b> ${h(d[1])}</p>`).join('')}</div>`).join('');
@@ -50,7 +50,7 @@ function flash(){
     if(!deck.length){c.innerHTML='<div class="card ok">¡Has dominado todas las flashcards! 🎉</div><button id="rf">Reiniciar</button>';$('#rf').onclick=()=>{S.known=[];save();flash()};return}
     const f=deck[i%deck.length];
     c.innerHTML=`<p class="mut">Pendientes: ${deck.length}. Pulsa la tarjeta para girarla.</p><div class="card fc">${back?h(f.a)+`<br><span class="mut">${h(f.src)}</span>`:'<b>'+h(f.q)+'</b>'}</div>
-    <div class="row"><button id="s" class="sec">Aún no la sé</button><button id="k" class="pri">La sé</button></div>`;
+<div class="row"><button id="s" class="sec">Aún no la sé</button><button id="k" class="pri">La sé</button></div>`;
     $('.fc').onclick=()=>{back=!back;draw()};
     $('#s').onclick=()=>{i++;back=false;draw()};
     $('#k').onclick=()=>{S.known.push(f.k);save();deck=deck.filter(x=>x!==f);back=false;draw()};
@@ -71,12 +71,12 @@ function mkTest(root,kind,bank){
   const setup=()=>{
     const topics=[...new Set(bank.map(x=>x.t))];
     R.innerHTML=`<div class="card"><div class="row">Tema <select id="a"><option value="">Todos</option>${topics.map(t=>`<option value="${t}">${h(topicName(t))}</option>`).join('')}</select>
-    Dificultad <select id="b"><option value="0">Todas</option><option value="1">Fácil</option><option value="2">Media</option><option value="3">Difícil</option></select>
-    Fuente <select id="src"><option value="b">Banco preparado</option><option value="g">Generadas del temario y PDF cargados</option></select>
-    ${kind==='vf'?'Afirmaciones <select id="w"><option value="">Todas</option><option value="f">Solo falsas</option><option value="v">Solo verdaderas</option></select>':''}
-    Nº <input id="c" type="number" min="1" value="10" style="width:70px"> Modo <select id="m"><option value="ex">Examen (corrijo al final)</option><option value="all">Todas en una página (corrección inmediata)</option><option value="pr">Una a una (corrección inmediata)</option></select></div>
-    <button id="go" class="pri">Empezar</button><p class="nota">Cada intento mezcla preguntas y respuestas, y prioriza las que no te han salido recientemente. Todo el contenido procede de tus PDF. El filtro de tema y dificultad solo afecta al banco preparado.</p></div>
-    <div class="card"><b>Repetir preguntas</b><div class="row"><button id="rf">❌ Falladas (${repPool(S.fails[fk]).length})</button><button id="ra">✅ Acertadas (${repPool(S.ok[fk]).length})</button><button id="rt">🔁 Todas las del banco (${items.length})</button></div><p class="nota">Usan el modo elegido arriba.</p></div>`;
+Dificultad <select id="b"><option value="0">Todas</option><option value="1">Fácil</option><option value="2">Media</option><option value="3">Difícil</option></select>
+Fuente <select id="src"><option value="b">Banco preparado</option><option value="g">Generadas del temario y PDF cargados</option></select>
+${kind==='vf'?'Afirmaciones <select id="w"><option value="">Todas</option><option value="f">Solo falsas</option><option value="v">Solo verdaderas</option></select>':''}
+Nº <input id="c" type="number" min="1" value="10" style="width:70px"> Modo <select id="m"><option value="ex">Examen (corrijo al final)</option><option value="all">Todas en una página (corrección inmediata)</option><option value="pr">Una a una (corrección inmediata)</option></select></div>
+<button id="go" class="pri">Empezar</button><p class="nota">Cada intento mezcla preguntas y respuestas, y prioriza las que no te han salido recientemente. Todo el contenido procede de tus PDF. El filtro de tema y dificultad solo afecta al banco preparado.</p></div>
+<div class="card"><b>Repetir preguntas</b><div class="row"><button id="rf">❌ Falladas (${repPool(S.fails[fk]).length})</button><button id="ra">✅ Acertadas (${repPool(S.ok[fk]).length})</button><button id="rt">🔁 Todas las del banco (${items.length})</button></div><p class="nota">Usan el modo elegido arriba.</p></div>`;
     $('#go',R).onclick=()=>{
       const want=kind==='vf'?$('#w',R).value:'',n=+$('#c',R).value||10;let l;
       if($('#src',R).value==='g'){l=kind==='vf'?genVF(want):genQuestions();if(l.length<4)return alert('Hacen falta al menos 4 conceptos.')}
@@ -94,8 +94,8 @@ function mkTest(root,kind,bank){
     const draw=()=>{
       const q=list[i],a=ans[i],lock=prac&&a!==null;
       R.innerHTML=`<div class="bar"><i style="width:${(i+1)*100/list.length}%"></i></div><div class="mut">Pregunta ${i+1} de ${list.length} · ${h(topicName(q.t))}${prac?' · corrección inmediata':''}</div>
-      <div class="card"><h3>${h(q.q)}</h3>${optHtml(q,i,lock,a)}${lock?fbHtml(q,a):''}</div>
-      <div class="row"><button id="pv" ${i?'':'disabled'}>← Anterior</button><button id="nx" ${i<list.length-1?'':'disabled'}>Siguiente →</button><button id="fin" class="pri">Finalizar</button></div>`;
+<div class="card"><h3>${h(q.q)}</h3>${optHtml(q,i,lock,a)}${lock?fbHtml(q,a):''}</div>
+<div class="row"><button id="pv" ${i?'':'disabled'}>← Anterior</button><button id="nx" ${i<list.length-1?'':'disabled'}>Siguiente →</button><button id="fin" class="pri">Finalizar</button></div>`;
       $$('.opt',R).forEach(b=>b.onclick=()=>{if(lock)return;ans[i]=+b.dataset.k;draw()});
       $('#pv',R).onclick=()=>{i--;draw()};$('#nx',R).onclick=()=>{i++;draw()};$('#fin',R).onclick=confirmFin;
     };
@@ -114,8 +114,8 @@ function mkTest(root,kind,bank){
       if(S.tests.length>40)S.tests.shift();save();
       const bad=list.filter((q,k)=>ans[k]!==q.a);
       R.innerHTML=`<div class="card ${nota>=5?'ok':'ko'}"><div class="big">${nota} / 10</div><b>${nota>=5?'Aprobado':'Suspenso'}</b> · ✅ Aciertos: <b>${ok}</b> · ❌ Fallos: <b>${n-ok}</b> · Porcentaje: <b>${Math.round(ok*100/n)}%</b></div>
-      <h3>Revisión de fallos</h3>${list.map((q,k)=>ans[k]===q.a?'':`<div class="card ko"><b>${h(q.q)}</b><br>Tu respuesta: ${ans[k]===null?'(sin responder)':h(q.o[ans[k]])}<br>Correcta: <b>${h(q.o[q.a])}</b><p>${h(q.e)}</p></div>`).join('')||'<div class="card ok">¡Sin fallos! 🎉</div>'}
-      <div class="row"><button id="nuevo" class="pri">Nuevo test</button>${bad.length?'<button id="rbad">Repetir las falladas de este intento</button>':''}</div>`;
+<h3>Revisión de fallos</h3>${list.map((q,k)=>ans[k]===q.a?'':`<div class="card ko"><b>${h(q.q)}</b><br>Tu respuesta: ${ans[k]===null?'(sin responder)':h(q.o[ans[k]])}<br>Correcta: <b>${h(q.o[q.a])}</b><p>${h(q.e)}</p></div>`).join('')||'<div class="card ok">¡Sin fallos! 🎉</div>'}
+<div class="row"><button id="nuevo" class="pri">Nuevo test</button>${bad.length?'<button id="rbad">Repetir las falladas de este intento</button>':''}</div>`;
       $('#nuevo',R).onclick=setup;if(bad.length)$('#rbad',R).onclick=()=>run(bad,true,all);
     };
     all?drawAll():draw();
@@ -141,7 +141,7 @@ const loadPdfs=async e=>{
       d.ok=d.pages.join('').trim().length>50; // pocas letras = probablemente escaneado
     }catch(err){d.err=err.message}
     const html=pdfDocs.map((x,k)=>`<div class="card ${x.ok?'':'ko'}"><label><input type="checkbox" data-k="${k}" ${x.use?'checked':''} ${x.ok?'':'disabled'}> <b>${h(x.name)}</b></label>
-      <span class="mut">${x.ok?x.pages.length+' páginas leídas':'❌ No se pudo leer texto (¿escaneado o dañado?) '+h(x.err||'')}</span></div>`).join('');
+<span class="mut">${x.ok?x.pages.length+' páginas leídas':'❌ No se pudo leer texto (¿escaneado o dañado?) '+h(x.err||'')}</span></div>`).join('');
     boxes.forEach(b=>b.innerHTML=html);$$('#pdfLista input,#pdfListaT input').forEach(c=>c.onchange=()=>{pdfDocs[c.dataset.k].use=c.checked;pdfRes();if($('#teoria .tabs .on').dataset.t==='pdf')teoria('pdf')});
     pdfRes();
   }
@@ -157,25 +157,25 @@ function pdfRes(){
   const hits=[];
   if(q)pdfDocs.filter(d=>d.ok&&d.use).forEach(d=>d.pages.forEach((t,p)=>{if(t.toLowerCase().includes(q)){const i=t.toLowerCase().indexOf(q);hits.push(`<div class="card"><span class="mut">${h(d.name)} · pág. ${p+1}</span><br>…${h(t.slice(Math.max(0,i-80),i+160).replace(/\n/g,' '))}…</div>`)}}));
   $('#pdfRes').innerHTML=(q?`<h3>Coincidencias (${hits.length})</h3>`+hits.join(''):'')+`<h3>Definiciones detectadas automáticamente (${out.length})</h3><p class="nota">Detección simple por patrón «Término: explicación». Puede fallar; no es análisis con IA. Pulsa para ocultar/mostrar la explicación y repasar.</p>`+
-    out.map(o=>`<div class="card"><b>${h(o.t)}</b> <span class="mut">${h(o.d)} · pág. ${o.p}</span><details><summary>Ver explicación</summary>${h(o.x)}</details></div>`).join('');
+  out.map(o=>`<div class="card"><b>${h(o.t)}</b> <span class="mut">${h(o.d)} · pág. ${o.p}</span><details><summary>Ver explicación</summary>${h(o.x)}</details></div>`).join('');
 }
 
 // ---------- Notebooks .ipynb ----------
 const KW=[ // patrón, explicación, error habitual, qué cambiar
- [/\bprint\(/,'print(...) muestra valores en pantalla.','Olvidar paréntesis o comillas.','Cambia el texto o añade otro valor separado por comas.'],
- [/\bfor\b.*\bin\b.*:/,'for recorre una secuencia; el cuerpo se repite una vez por elemento.','Olvidar los dos puntos o la indentación.','Cambia el rango o la lista que se recorre.'],
- [/range\(/,'range(a,b) genera enteros desde a hasta b−1 (b no se incluye).','Esperar que range(5) incluya el 5.','Prueba range(1,6) o añade un paso: range(0,10,2).'],
- [/\bwhile\b/,'while repite mientras la condición sea verdadera.','No actualizar la variable: bucle infinito.','Cambia la condición o el incremento.'],
- [/\bif\b|\belif\b|\belse\b/,'Condicional: ejecuta un bloque solo si se cumple la condición.','Usar = en vez de == para comparar.','Prueba otros valores de entrada para ver qué rama se ejecuta.'],
- [/\bdef\b/,'def define una función con nombre y parámetros.','Olvidar return o los dos puntos.','Llama a la función con otros argumentos.'],
- [/\breturn\b/,'return devuelve un resultado y termina la función.','Usar print en lugar de return.','Devuelve otro valor y observa el efecto.'],
- [/\.append\(/,'append añade un elemento al final de una lista (la modifica).','Guardar el resultado: lista = lista.append(x) da None.','Añade varios elementos con un bucle.'],
- [/\blen\(/,'len(x) devuelve el número de elementos.','Usar el índice len(x) (fuera de rango).','Prueba con una lista vacía.'],
- [/\+=/,'x += y equivale a x = x + y (acumulador).','No inicializar el acumulador antes del bucle.','Cambia el valor inicial (0 suma, 1 producto).'],
- [/\/\/|%/,'// es división entera y % el resto.','Confundir / (decimal) con //.','Prueba con números negativos.'],
- [/\bimport\b|\bfrom\b.*\bimport\b/,'Importa una librería o función para usarla.','Escribir mal el nombre del módulo.','Importa solo lo que necesitas.'],
- [/\[.*:.*\]/,'Corte (slicing): selecciona un subconjunto [inicio:fin), fin no incluido.','Pensar que incluye el elemento fin.','Prueba índices negativos.'],
- [/\bmid\b|\/\/ ?2/,'Punto medio: base de divide y vencerás / búsqueda binaria.','Actualizar mal los límites y entrar en bucle infinito.','Cambia los límites y traza el valor de mid.']
+  [/\bprint\(/,'print(...) muestra valores en pantalla.','Olvidar paréntesis o comillas.','Cambia el texto o añade otro valor separado por comas.'],
+  [/\bfor\b.*\bin\b.*:/,'for recorre una secuencia; el cuerpo se repite una vez por elemento.','Olvidar los dos puntos o la indentación.','Cambia el rango o la lista que se recorre.'],
+  [/range\(/,'range(a,b) genera enteros desde a hasta b−1 (b no se incluye).','Esperar que range(5) incluya el 5.','Prueba range(1,6) o añade un paso: range(0,10,2).'],
+  [/\bwhile\b/,'while repite mientras la condición sea verdadera.','No actualizar la variable: bucle infinito.','Cambia la condición o el incremento.'],
+  [/\bif\b|\belif\b|\belse\b/,'Condicional: ejecuta un bloque solo si se cumple la condición.','Usar = en vez de == para comparar.','Prueba otros valores de entrada para ver qué rama se ejecuta.'],
+  [/\bdef\b/,'def define una función con nombre y parámetros.','Olvidar return o los dos puntos.','Llama a la función con otros argumentos.'],
+  [/\breturn\b/,'return devuelve un resultado y termina la función.','Usar print en lugar de return.','Devuelve otro valor y observa el efecto.'],
+  [/\.append\(/,'append añade un elemento al final de una lista (la modifica).','Guardar el resultado: lista = lista.append(x) da None.','Añade varios elementos con un bucle.'],
+  [/\blen\(/,'len(x) devuelve el número de elementos.','Usar el índice len(x) (fuera de rango).','Prueba con una lista vacía.'],
+  [/\+=/,'x += y equivale a x = x + y (acumulador).','No inicializar el acumulador antes del bucle.','Cambia el valor inicial (0 suma, 1 producto).'],
+  [/\/\/|%/,'// es división entera y % el resto.','Confundir / (decimal) con //.','Prueba con números negativos.'],
+  [/\bimport\b|\bfrom\b.*\bimport\b/,'Importa una librería o función para usarla.','Escribir mal el nombre del módulo.','Importa solo lo que necesitas.'],
+  [/\[.*:.*\]/,'Corte (slicing): selecciona un subconjunto [inicio:fin), fin no incluido.','Pensar que incluye el elemento fin.','Prueba índices negativos.'],
+  [/\bmid\b|\/\/ ?2/,'Punto medio: base de divide y vencerás / búsqueda binaria.','Actualizar mal los límites y entrar en bucle infinito.','Cambia los límites y traza el valor de mid.']
 ];
 const BLANK=['range','print','append','len','return','while','def','for','if','else','elif','mid','import'];
 const md=t=>{
@@ -204,6 +204,7 @@ const nbOutHtml=c=>(c.outputs||[]).map(o=>{
   if(d['text/plain'])return `<pre class="out">${h([].concat(d['text/plain']).join(''))}</pre>`;
   return '';
 }).join('');
+
 // ---------- Kernel de Python real (Pyodide en un Web Worker) ----------
 const PYHELPER=String.raw`
 import sys, io, ast, traceback, builtins
@@ -236,9 +237,9 @@ def _run(code):
 const WORKER=`importScripts('https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js');
 let py;const ready=(async()=>{py=await loadPyodide();py.runPython(${JSON.stringify(PYHELPER)});postMessage({type:'ready'})})();
 onmessage=async e=>{await ready;const {id,code}=e.data;
- try{try{await py.loadPackagesFromImports(code)}catch(_){}
-  const r=py.globals.get('_run')(code);const [out,val,err]=r.toJs();if(r.destroy)r.destroy();postMessage({id,out,val,err})}
- catch(x){postMessage({id,out:'',val:null,err:String(x)})}};`;
+try{try{await py.loadPackagesFromImports(code)}catch(_){}
+const r=py.globals.get('_run')(code);const [out,val,err]=r.toJs();if(r.destroy)r.destroy();postMessage({id,out,val,err})}
+catch(x){postMessage({id,out:'',val:null,err:String(x)})}};`;
 let kernel=null,kReady=null,seq=0,pending={},kStatus='Python se cargará al ejecutar la primera celda',execN=0;
 const setStatus=t=>{kStatus=t;const el=$('#kst');if(el)el.textContent=t};
 function stopKernel(msg){
@@ -267,6 +268,7 @@ const srcKey=n=>'nbsrc:'+n;
 const savedSrc=n=>{try{return JSON.parse(localStorage.getItem(srcKey(n))||'{}')}catch(e){return {}}};
 const resHtml=r=>{const txt=(r.out||'')+(r.val!=null?((r.out&&!r.out.endsWith('\n')?'\n':'')+r.val):'');
   return (txt?`<pre class="out">${h(txt)}</pre>`:'')+(r.err?`<pre class="out err">${h(r.err)}</pre>`:'')};
+
 // ---------- Resaltado de sintaxis Python (sin librerías) ----------
 const PY_KW=new Set('False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield match case'.split(' '));
 const PY_BI=new Set('abs all any bin bool chr dict dir divmod enumerate filter float format hex input int isinstance len list map max min next oct open ord pow print range repr reversed round set sorted str sum tuple type zip super object Exception ValueError TypeError IndexError KeyError ZeroDivisionError RecursionError StopIteration'.split(' '));
@@ -294,6 +296,7 @@ const runCell=(c,i,name)=>{
   const o=savedOut(name)[i],mine=!!(o&&o.code===src);
   return `<div class="nbcell" data-name="${h(name)}" data-i="${i}"><div class="row"><button class="run pri">▶ Ejecutar</button><span class="mut ec">${mine?'['+o.n+']':'[ ]'}</span></div><div class="ed"><pre class="hl" aria-hidden="true"><code>${hlPy(src)}\n</code></pre><textarea class="src" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" wrap="off" rows="${Math.max(2,src.split('\n').length+1)}">${h(src)}</textarea></div><div class="outs">${mine?resHtml(o):nbOutHtml(c)}</div></div>`;
 };
+
 // ---------- Editor de código: sangría, pares, deshacer correcto ----------
 const insTxt=(ta,t)=>{ta.focus();if(!document.execCommand('insertText',false,t)){ta.setRangeText(t,ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}};
 const delSel=ta=>{ta.focus();if(!document.execCommand('delete')){ta.setRangeText('',ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}};
@@ -406,11 +409,11 @@ function cell(c,i,fid,ex){
   const bl=BLANK.find(b=>new RegExp('\\b'+b+'\\b').test(src));
   const clozed=bl?src.replace(new RegExp('\\b'+bl+'\\b'),'_____'):'';
   return `<div class="card"><b>Celda ${i+1} (código)</b><pre><code>${hlPy(src)}</code></pre>
-    ${out&&!ex?`<pre class="out">${h(out)}</pre>`:''}
-    <details ${ex?'':'open'}><summary>Explicación paso a paso</summary>${lines}
-      ${hits.length?'<p><b>Errores habituales:</b></p>'+hits.map(k=>'<div>⚠ '+h(k[2])+'</div>').join('')+'<p><b>Prueba a cambiar:</b></p>'+hits.map(k=>'<div>✏️ '+h(k[3])+'</div>').join(''):''}</details>
-    ${out?`<div class="card" data-out="${h(out)}" data-id="${id}"><b>¿Qué resultado produce?</b><textarea rows="2"></textarea><div class="row"><button class="hint sec">💡 Pista</button><button class="chk pri">Comprobar</button></div><div class="msg"></div></div>`:''}
-    ${clozed?`<div class="card" data-bl="${bl}"><b>Completa el código</b><pre><code>${hlPy(clozed)}</code></pre><div class="row"><input type="text" placeholder="¿qué falta en _____?"><button class="chk2 pri">Comprobar</button><button class="hint2 sec">💡 Pista</button></div><div class="msg"></div></div>`:''}</div>`;
+${out&&!ex?`<pre class="out">${h(out)}</pre>`:''}
+<details ${ex?'':'open'}><summary>Explicación paso a paso</summary>${lines}
+${hits.length?'<p><b>Errores habituales:</b></p>'+hits.map(k=>'<div>⚠ '+h(k[2])+'</div>').join('')+'<p><b>Prueba a cambiar:</b></p>'+hits.map(k=>'<div>✏️ '+h(k[3])+'</div>').join(''):''}</details>
+${out?`<div class="card" data-out="${h(out)}" data-id="${id}"><b>¿Qué resultado produce?</b><textarea rows="2"></textarea><div class="row"><button class="hint sec">💡 Pista</button><button class="chk pri">Comprobar</button></div><div class="msg"></div></div>`:''}
+${clozed?`<div class="card" data-bl="${bl}"><b>Completa el código</b><pre><code>${hlPy(clozed)}</code></pre><div class="row"><input type="text" placeholder="¿qué falta en _____?"><button class="chk2 pri">Comprobar</button><button class="hint2 sec">💡 Pista</button></div><div class="msg"></div></div>`:''}</div>`;
 }
 function wireNb(){
   $$('[data-out]').forEach(d=>{let n=0;const out=d.dataset.out,m=$('.msg',d),lines=out.split('\n');
@@ -458,8 +461,9 @@ function intentos(){
   const list=S.tests.map((t,i)=>({...t,i})).reverse(),ap=list.filter(t=>t.nota>=5).length;
   $('#intentosCont').innerHTML=`<div class="grid"><div class="card"><div class="big">${list.length}</div>intentos</div><div class="card ok"><div class="big">${ap}</div>aprobados (nota ≥ 5)</div><div class="card ko"><div class="big">${list.length-ap}</div>suspensos</div></div>`+
   (list.length?list.map(t=>`<div class="card"><div class="row"><b>${t.kind==='vf'?'Verdadero/Falso':'Test A/B/C/D'}</b><span class="mut">${h(t.fecha||'')}</span><span class="fb ${t.nota>=5?'ok':'ko'}" style="margin:0;padding:3px 12px">${t.nota>=5?'Aprobado':'Suspenso'} · ${t.nota}/10 · ${t.ok}/${t.n}</span></div>
-    ${t.det?`<details><summary>Ver las ${t.n} preguntas</summary>${t.det.map(d=>`<div class="fb ${d.ok?'ok':'ko'}"><b>${h(d.q)}</b><br>Tu respuesta: ${h(d.r)}${d.ok?'':'<br>Correcta: <b>'+h(d.c)+'</b><br>'+h(d.e)}</div>`).join('')}</details>`:'<p class="nota">Sin detalle (intento anterior a esta versión).</p>'}</div>`).join(''):'<div class="card">Aún no has hecho ningún test. Tus intentos aparecerán aquí.</div>');
+${t.det?`<details><summary>Ver las ${t.n} preguntas</summary>${t.det.map(d=>`<div class="fb ${d.ok?'ok':'ko'}"><b>${h(d.q)}</b><br>Tu respuesta: ${h(d.r)}${d.ok?'':'<br>Correcta: <b>'+h(d.c)+'</b><br>'+h(d.e)}</div>`).join('')}</details>`:'<p class="nota">Sin detalle (intento anterior a esta versión).</p>'}</div>`).join(''):'<div class="card">Aún no has hecho ningún test. Tus intentos aparecerán aquí.</div>');
 }
+
 // ---------- Reconstrucción legible del texto del PDF ----------
 function pageLines(tc){
   const ls=[];
@@ -518,6 +522,7 @@ const BUILTIN={
   p4:{file:'notebooks/algoritmia_Practica_4_Ordenacion_Divide_y_Venceras.ipynb',title:'🐍 Práctica 4 · Ordenación D&V'},
   p5:{file:'notebooks/algoritmia_05_Voraces_Laboratorio.ipynb',title:'🐍 Práctica 5 · Voraces'},
   p6:{file:'notebooks/algoritmia_06_Grafos_y_Dijkstra.ipynb',title:'🐍 Práctica 6 · Grafos y Dijkstra'}
+};
 const nbCache={};let uploaded=[],sharedKey=null,curNb=null,syncMsg='⏳ Conectando edición compartida…';
 async function openNb(key){
   const up=key==='up';
